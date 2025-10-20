@@ -2,8 +2,8 @@
 <html lang="th" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
-    <title>Q-CON Cost Compare - Full System v1.01</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-CON Cost Compare - Full System</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -11,18 +11,16 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
+        /* --- Google Fonts: IBM Plex Sans Thai (Embedded CSS) --- */
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@100;200;300;400;500;600;700&display=swap');
+
+        /* --- Custom Styles --- */
         body { font-family: 'IBM Plex Sans Thai', sans-serif; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-thumb { background: #f97316; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #ea580c; }
         html.light ::-webkit-scrollbar-track { background: #e5e7eb; }
         html.dark ::-webkit-scrollbar-track { background: #1e293b; }
-        
-        /* เพิ่ม class สำหรับ animation ที่ต้องใช้ opacity เริ่มต้น */
-        .stagger-item {
-            opacity: 0;
-        }
     </style>
     <script>
       tailwind.config = {
@@ -33,39 +31,17 @@
               'primary-brand': '#f97316', 'primary-dark': '#ea580c', 'primary-light': '#fff7ed', 'accent-black': '#1f2937',
             },
             keyframes: {
-              // --- Animations เดิม ---
               'fade-in': { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
               'slide-in-from-bottom': { '0%': { transform: 'translateY(10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
-              
-              // --- Animations ใหม่ที่เพิ่มเข้ามา ---
-              'scale-in': {
-                '0%': { transform: 'scale(0.95)', opacity: '0' },
-                '100%': { transform: 'scale(1)', opacity: '1' },
-              },
-              'slide-in-from-right': {
-                '0%': { transform: 'translateX(20px)', opacity: '0' },
-                '100%': { transform: 'translateX(0)', opacity: '1' },
-              },
-              'pulse-bright': {
-                '0%, 100%': { transform: 'scale(1)', filter: 'brightness(1)' },
-                '50%': { transform: 'scale(1.05)', filter: 'brightness(1.2)' },
-              },
             },
-            animation: {
-              'in': 'fade-in 0.4s ease-out, slide-in-from-bottom 0.5s ease-out',
-              // --- Animation Class ใหม่ ---
-              'subtle-in': 'scale-in 0.3s ease-out forwards',
-              'list-item-in': 'slide-in-from-right 0.5s ease-out forwards',
-              'pulse-badge': 'pulse-bright 2s ease-in-out infinite',
-            }
+            animation: { 'in': 'fade-in 0.3s ease-out, slide-in-from-bottom 0.4s ease-out', }
           }
         }
       }
     </script>
 </head>
-<body class="bg-gray-100 dark:bg-slate-900">
+<body>
     <div id="root"></div>
-    <div class="fixed bottom-4 right-4 text-xs text-gray-400 dark:text-slate-500">Version 1.01</div>
 
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
@@ -77,68 +53,100 @@
         const FORMULA_DRAFT_KEY = 'qcon_formula_draft';
         const MAX_SAVED_ITEMS = 20;
 
-        // --- Data Configuration (ไม่เปลี่ยนแปลง) ---
+        // --- Data Configuration with Variable Keys in Labels ---
         const DATA_CONFIG = [{group:"1. ข้อมูลโครงการ",items:[{key:'WA',label:'พื้นที่ผนังทั้งหมด (WA)',unit:'ตร.ม.',default:430,isProjectData:true}]},{group:"2. ข้อมูลปริมาณงานโครงสร้างเสริม",items:[{key:'LC',label:'ความยาวเอ็นคสล. (LC)',unit:'เมตร',default:229},{key:'LL75',label:'ความยาว Lintel 7.5 cm. (LL75)',unit:'เมตร',default:208},{key:'LL100',label:'ความยาว Lintel 10 cm. (LL100)',unit:'เมตร',default:28}]},{group:"3. ราคาวัสดุก่อผนัง",items:[{key:'QCB',label:'ปริมาณอิฐมอญ (QCB)',unit:'ก้อน/ตร.ม.',default:28},{key:'PCB',label:'ราคาอิฐมอญ (PCB)',unit:'บาท/ก้อน',default:5.5},{key:'QQ',label:'ปริมาณอิฐมวลเบา (QQ)',unit:'ก้อน/ตร.ม.',default:8.33},{key:'PQ75',label:'ราคาอิฐมวลเบา 7.5 cm. (PQ75)',unit:'บาท/ก้อน',default:26},{key:'PQ10',label:'ราคาอิฐมวลเบา 10 cm. (PQ10)',unit:'บาท/ก้อน',default:34}]},{group:"4. ราคาวัสดุปูนก่อ/ฉาบ และวัสดุเสริม",items:[{key:'PCAM',label:'ราคาปูนก่ออิฐมอญสำเร็จรูป (PCAM)',unit:'บาท/ถุง',default:96},{key:'PCPM',label:'ราคาปูนฉาบอิฐมอญสำเร็จรูป (PCPM)',unit:'บาท/ถุง',default:123},{key:'PQAM',label:'ราคาปูนก่ออิฐมวลเบา (PQAM)',unit:'บาท/ถุง',default:221},{key:'PQPM',label:'ราคาปูนฉาบอิฐมวลเบา (PQPM)',unit:'บาท/ถุง',default:148},{key:'PAS',label:'ราคาเหล็กหนวดกุ้ง (PAS)',unit:'บาท/กก.',default:22},{key:'PLC',label:'ราคาเอ็นคสล. (PLC)',unit:'บาท/เมตร',default:120},{key:'PL75',label:'ราคา Lintel 7.5 cm. (PL75)',unit:'บาท/เมตร',default:130},{key:'PL100',label:'ราคา Lintel 10 cm. (PL100)',unit:'บาท/เมตร',default:195}]},{group:"5. ค่าแรง",items:[{key:'LAC',label:'ค่าแรงก่ออิฐมอญ (LAC)',unit:'บาท/ตร.ม.',default:110},{key:'LPC',label:'ค่าแรงฉาบอิฐมอญ (LPC)',unit:'บาท/ตร.ม.',default:110},{key:'LAQ',label:'ค่าแรงก่ออิฐมวลเบา (LAQ)',unit:'บาท/ตร.ม.',default:110},{key:'LPQ',label:'ค่าแรงฉาบอิฐมวลเบา (LPQ)',unit:'บาท/ตร.ม.',default:110},{key:'LCL75',label:'ค่าแรงติดตั้ง Lintel 7.5 cm. (LCL75)',unit:'บาท/เมตร',default:12}]}];
         const initialDataMap = DATA_CONFIG.flatMap(g => g.items).reduce((acc, item) => ({ ...acc, [item.key]: item.default }), {});
         const wallTypes = ["อิฐมอญ + เอ็นคสล.", "ALC(7.5) & เอ็นคสล.", "ALC(7.5) & Lintel", "ALC(10) & Lintel"];
         
-        // --- Default Formulas (ไม่เปลี่ยนแปลง) ---
+        // --- Default Formulas ---
         const defaultFormulas = { "อิฐมอญ + เอ็นคสล.": [{ name:"วัสดุก่อ(ก้อน)", formula: "(WA-(LC*0.1))*QCB", priceVar: "PCB" }, { name:"ปูนก่อ (ถุง)", formula: "WA/1.2", priceVar: "PCAM" }, { name:"ปูนฉาบ (ถุง)", formula: "WA*2/1.28", priceVar: "PCPM" }, { name:"เหล็กหนวดกุ้ง (กก.)", formula: "WA*0.11", priceVar: "PAS" }, { name:"เอ็นคสล. (ม.)", formula: "LC", priceVar: "PLC" }, { name:"Lintel (ม.)", formula: "0", priceVar: "PL75" }, { name:"ค่าแรงก่อ", formula: "WA", priceVar: "LAC" }, { name:"ค่าแรงฉาบ", formula: "WA*2", priceVar: "LPC" }, { name:"ค่าแรงติดตั้ง Lintel", formula: "0", priceVar: "LCL75" }], "ALC(7.5) & เอ็นคสล.": [{ name:"วัสดุก่อ(ก้อน)", formula: "(WA-(LC*0.1))*QQ", priceVar: "PQ75" }, { name:"ปูนก่อ (ถุง)", formula: "WA/33", priceVar: "PQAM" }, { name:"ปูนฉาบ (ถุง)", formula: "WA*2/2.5", priceVar: "PQPM" }, { name:"เหล็กหนวดกุ้ง (กก.)", formula: "WA*0.11", priceVar: "PAS" }, { name:"เอ็นคสล. (ม.)", formula: "LC", priceVar: "PLC" }, { name:"Lintel (ม.)", formula: "0", priceVar: "PL75" }, { name:"ค่าแรงก่อ", formula: "WA", priceVar: "LAQ" }, { name:"ค่าแรงฉาบ", formula: "WA*2", priceVar: "LPQ" }, { name:"ค่าแรงติดตั้ง Lintel", formula: "0", priceVar: "LCL75" }], "ALC(7.5) & Lintel": [{ name:"วัสดุก่อ(ก้อน)", formula: "(WA-(LL75*0.2))*QQ", priceVar: "PQ75" }, { name:"ปูนก่อ (ถุง)", formula: "WA/33", priceVar: "PQAM" }, { name:"ปูนฉาบ (ถุง)", formula: "WA*2/2.5", priceVar: "PQPM" }, { name:"เหล็กหนวดกุ้ง (กก.)", formula: "WA*0.11", priceVar: "PAS" }, { name:"เอ็นคสล. (ม.)", formula: "0", priceVar: "PLC" }, { name:"Lintel (ม.)", formula: "LL75", priceVar: "PL75" }, { name:"ค่าแรงก่อ", formula: "WA", priceVar: "LAQ" }, { name:"ค่าแรงฉาบ", formula: "WA*2", priceVar: "LPQ" }, { name:"ค่าแรงติดตั้ง Lintel", formula: "LL75", priceVar: "LCL75" }], "ALC(10) & Lintel": [{ name:"วัสดุก่อ(ก้อน)", formula: "(WA-LL100*0.2)*QQ", priceVar: "PQ10" }, { name:"ปูนก่อ (ถุง)", formula: "WA/25", priceVar: "PQAM" }, { name:"ปูนฉาบ (ถุง)", formula: "WA*2/2.5", priceVar: "PQPM" }, { name:"เหล็กหนวดกุ้ง (กก.)", formula: "WA*0.11", priceVar: "PAS" }, { name:"เอ็นคสล. (ม.)", formula: "0", priceVar: "PLC" }, { name:"Lintel (ม.)", formula: "LL100", priceVar: "PL100" }, { name:"ค่าแรงก่อ", formula: "WA", priceVar: "LAQ" }, { name:"ค่าแรงฉาบ", formula: "WA*2", priceVar: "LPQ" }, { name:"ค่าแรงติดตั้ง Lintel", formula: "0", priceVar: "LCL75" }] };
         
-        // --- Calculation Engine & Helpers (ไม่เปลี่ยนแปลง) ---
+        // --- Calculation Engine & Helpers ---
         const formatNumber = (num, decimals = 0) => (isNaN(num) || num === null || num === "") ? '0' : parseFloat(num).toLocaleString('th-TH', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
         const loadFromStorage = (key) => { try { return JSON.parse(localStorage.getItem(key)) || []; } catch (e) { return []; } };
         const saveToStorage = (key, data) => { try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) { console.error("Could not save to storage", e); } };
+        
         const evaluateFormula = (formulaStr, context) => { if (!formulaStr || typeof formulaStr !== 'string') return 0; const varNames = Object.keys(context); const varValues = varNames.map(key => context[key] || 0); try { const sanitized = formulaStr.replace(/(window|document|alert|eval)/g, ''); const func = new Function(...varNames, `return ${sanitized};`); const result = func(...varValues); return isNaN(result) || !isFinite(result) ? 0 : result; } catch (e) { console.error(`Formula Error: "${formulaStr}"`, e); return 0; } };
         const calculateTable = (dataContext, formulaSet) => { const getNum = (key) => parseFloat(dataContext[key]) || 0; const WA = getNum('WA'); const table = formulaSet.map(rowDef => { const qRaw = evaluateFormula(rowDef.formula, dataContext); const qCeil = Math.ceil(Math.max(0, qRaw)); const unitPrice = dataContext[rowDef.priceVar] || 0; const total = qCeil * unitPrice; return { n: rowDef.name, q: qCeil, u: unitPrice, t: total }; }); const total = table.reduce((s, r) => s + r.t, 0); return { rows: table, total, perSqm: WA > 0 ? total / WA : 0 }; };
 
-        // --- UI Components (ปรับปรุง) ---
-        const LocalButton = ({ children, onClick, className = "", variant = "primary", disabled = false, type = "button" }) => { 
-            const base = "px-5 py-3 rounded-xl font-semibold transition-all duration-300 shadow-md transform active:scale-[0.98] w-full text-base whitespace-nowrap hover:-translate-y-1 hover:shadow-lg"; 
-            const variants = { primary: "bg-primary-brand text-white hover:bg-primary-dark", secondary: "bg-gray-200 text-accent-black hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600", danger: "bg-red-600 text-white hover:bg-red-700 hover:shadow-md dark:bg-red-600 dark:hover:bg-red-500" }; 
-            return <button type={type} className={`${base} ${variants[variant]} ${className} ${disabled ? 'opacity-50 cursor-not-allowed hover:translate-y-0' : ''}`} onClick={onClick} disabled={disabled}>{children}</button>; 
-        };
-        const LocalCard = ({ children, className = "", style = {} }) => <div style={style} className={`bg-white dark:bg-slate-800 dark:border dark:border-slate-700 rounded-xl shadow-2xl dark:shadow-slate-900/50 overflow-hidden transition-all duration-300 ${className}`}>{children}</div>;
+        // --- UI Components ---
+        const LocalButton = ({ children, onClick, className = "", variant = "primary", disabled = false, type = "button" }) => { const base = "px-5 py-3 rounded-xl font-semibold transition-all duration-300 shadow-md transform active:scale-[0.98] w-full text-base whitespace-nowrap"; const variants = { primary: "bg-primary-brand text-white hover:bg-primary-dark hover:shadow-lg", secondary: "bg-gray-200 text-accent-black hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600", danger: "bg-red-600 text-white hover:bg-red-700 hover:shadow-md dark:bg-red-600 dark:hover:bg-red-500" }; return <button type={type} className={`${base} ${variants[variant]} ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`} onClick={onClick} disabled={disabled}>{children}</button>; };
+        const LocalCard = ({ children, className = "" }) => <div className={`bg-white dark:bg-slate-800 dark:border dark:border-slate-700 rounded-xl shadow-2xl dark:shadow-slate-900/50 overflow-hidden transition-colors duration-300 ${className}`}>{children}</div>;
         const LocalCardHeader = ({ children }) => <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-700 bg-primary-light dark:bg-slate-900/50 transition-colors duration-300"><h2 className="text-xl sm:text-2xl font-bold text-primary-dark">{children}</h2></div>;
         const LocalCardContent = ({ children, className = "" }) => <div className={`p-4 sm:p-6 ${className}`}>{children}</div>;
-        const NavThemeToggle = ({ theme, setTheme }) => { const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark'); return (<button onClick={toggleTheme} className="p-2 rounded-full bg-gray-200 dark:bg-slate-700 text-primary-brand hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300 transform hover:scale-110" aria-label="Toggle theme" > {theme === 'dark' ? (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>) : (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>)} </button>); };
-        const SavedConfigsModal = ({ savedConfigs, saveName, setSaveName, onSave, onLoad, onDelete, onClose }) => ( <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 animate-in" onClick={onClose}> <LocalCard className="w-full max-w-lg max-h-[80vh] overflow-y-auto animate-subtle-in" onClick={e => e.stopPropagation()}> <LocalCardHeader>บันทึก / โหลดการตั้งค่า ({savedConfigs.length}/{MAX_SAVED_ITEMS})</LocalCardHeader> <LocalCardContent> <div className="space-y-4"> <div className="border p-4 rounded-lg bg-gray-50 dark:bg-slate-700/50 dark:border-slate-600 space-y-3 shadow-inner"> <h3 className="font-bold text-lg text-primary-dark dark:text-primary-brand">บันทึกค่าปัจจุบัน</h3> <input type="text" value={saveName} onChange={e => setSaveName(e.target.value)} onClick={e => e.stopPropagation()} placeholder="ตั้งชื่อข้อมูล เช่น 'โครงการ A 2568'" className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg p-3 text-base focus:border-primary-dark focus:ring-1 focus:ring-primary-dark transition-all" /> <LocalButton onClick={onSave} disabled={!saveName.trim() || savedConfigs.length >= MAX_SAVED_ITEMS}>บันทึก</LocalButton> {savedConfigs.length >= MAX_SAVED_ITEMS && <p className="text-red-500 text-sm text-center">บันทึกข้อมูลเต็มแล้ว</p>} </div> {savedConfigs.length > 0 ? ( <div className="space-y-2"><h3 className="font-bold text-lg text-accent-black dark:text-slate-200 border-b dark:border-slate-600 pb-1">ข้อมูลที่บันทึกไว้</h3><ul className="divide-y divide-gray-200 dark:divide-slate-700"> {savedConfigs.map((c, i) => (<li key={c.id} style={{ animationDelay: `${i * 75}ms` }} className="py-3 flex justify-between items-center space-x-2 hover:bg-gray-50 dark:hover:bg-slate-700/50 rounded-md px-1 transition-colors stagger-item animate-list-item-in"> <div className="flex-1 min-w-0"><p className="font-semibold truncate">{c.name}</p><p className="text-xs text-gray-500 dark:text-slate-400">บันทึกเมื่อ: {c.date}</p></div> <div className="flex space-x-2"><LocalButton variant="secondary" onClick={() => onLoad(c.config)} className="py-2 px-3 text-sm !w-auto">โหลด</LocalButton><LocalButton variant="danger" onClick={() => onDelete(c.id)} className="py-2 px-3 text-sm !w-auto">ลบ</LocalButton></div> </li>))} </ul></div> ) : <p className="text-center text-gray-500 dark:text-slate-400 py-4">ยังไม่มีข้อมูลที่บันทึกไว้</p>} <LocalButton variant="secondary" onClick={onClose} className="w-full mt-4">ปิด</LocalButton> </div> </LocalCardContent> </LocalCard> </div> );
+        const NavThemeToggle = ({ theme, setTheme }) => { const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark'); return (<button onClick={toggleTheme} className="p-2 rounded-full bg-gray-200 dark:bg-slate-700 text-primary-brand hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300" aria-label="Toggle theme" > {theme === 'dark' ? (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>) : (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>)} </button>); };
+        const SavedConfigsModal = ({ savedConfigs, saveName, setSaveName, onSave, onLoad, onDelete, onClose }) => ( <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 animate-in" onClick={onClose}> <LocalCard className="w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}> <LocalCardHeader>บันทึก / โหลดการตั้งค่า ({savedConfigs.length}/{MAX_SAVED_ITEMS})</LocalCardHeader> <LocalCardContent> <div className="space-y-4"> <div className="border p-4 rounded-lg bg-gray-50 dark:bg-slate-700/50 dark:border-slate-600 space-y-3 shadow-inner"> <h3 className="font-bold text-lg text-primary-dark dark:text-primary-brand">บันทึกค่าปัจจุบัน</h3> <input type="text" value={saveName} onChange={e => setSaveName(e.target.value)} onClick={e => e.stopPropagation()} placeholder="ตั้งชื่อข้อมูล เช่น 'โครงการ A 2568'" className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg p-3 text-base focus:border-primary-dark focus:ring-1 focus:ring-primary-dark" /> <LocalButton onClick={onSave} disabled={!saveName.trim() || savedConfigs.length >= MAX_SAVED_ITEMS}>บันทึก</LocalButton> {savedConfigs.length >= MAX_SAVED_ITEMS && <p className="text-red-500 text-sm text-center">บันทึกข้อมูลเต็มแล้ว</p>} </div> {savedConfigs.length > 0 ? ( <div className="space-y-2"><h3 className="font-bold text-lg text-accent-black dark:text-slate-200 border-b dark:border-slate-600 pb-1">ข้อมูลที่บันทึกไว้</h3><ul className="divide-y divide-gray-200 dark:divide-slate-700"> {savedConfigs.map(c => (<li key={c.id} className="py-3 flex justify-between items-center space-x-2 hover:bg-gray-50 dark:hover:bg-slate-700/50 rounded-md px-1 transition-colors"> <div className="flex-1 min-w-0"><p className="font-semibold truncate">{c.name}</p><p className="text-xs text-gray-500 dark:text-slate-400">บันทึกเมื่อ: {c.date}</p></div> <div className="flex space-x-2"><LocalButton variant="secondary" onClick={() => onLoad(c.config)} className="py-2 px-3 text-sm !w-auto">โหลด</LocalButton><LocalButton variant="danger" onClick={() => onDelete(c.id)} className="py-2 px-3 text-sm !w-auto">ลบ</LocalButton></div> </li>))} </ul></div> ) : <p className="text-center text-gray-500 dark:text-slate-400 py-4">ยังไม่มีข้อมูลที่บันทึกไว้</p>} <LocalButton variant="secondary" onClick={onClose} className="w-full mt-4">ปิด</LocalButton> </div> </LocalCardContent> </LocalCard> </div> );
 
         function App() {
-            // --- State Management (ไม่เปลี่ยนแปลง) ---
-            const [step, setStep] = useState(0); 
+            const [step, setStep] = useState(0); // 0: Home, 1: Inputs, 2: Summary, 3: Detailed, 4: Formula Editor
+            
+            // --- State for Data Inputs ---
             const [data, setData] = useState(initialDataMap);
             const [savedDataConfigs, setSavedDataConfigs] = useState(() => loadFromStorage(DATA_CONFIG_KEY));
             const [dataSaveName, setDataSaveName] = useState('');
             const [showDataModal, setShowDataModal] = useState(false);
+
+            // --- State for Formulas ---
             const [formulas, setFormulas] = useState(() => JSON.parse(localStorage.getItem(FORMULA_DRAFT_KEY)) || JSON.parse(JSON.stringify(defaultFormulas)));
             const [savedFormulaConfigs, setSavedFormulaConfigs] = useState(() => loadFromStorage(FORMULA_CONFIG_KEY));
             const [formulaSaveName, setFormulaSaveName] = useState('');
             const [selectedFormulaSet, setSelectedFormulaSet] = useState('');
+
+            // --- Theme State ---
             const [theme, setTheme] = useState('dark');
-            
-            // --- Effects (ไม่เปลี่ยนแปลง) ---
+
+            // --- Effects ---
             useEffect(() => { const root = window.document.documentElement; root.classList.remove(theme === 'dark' ? 'light' : 'dark'); root.classList.add(theme); }, [theme]);
             useEffect(() => { localStorage.setItem(FORMULA_DRAFT_KEY, JSON.stringify(formulas)); }, [formulas]);
-            
-            // --- Handlers (ไม่เปลี่ยนแปลง) ---
+
+            // --- Handlers for Data Configurations ---
             const handleSaveData = () => { if (!dataSaveName.trim()) return; const newConfig = { id: Date.now(), name: dataSaveName.trim(), date: new Date().toLocaleDateString('th-TH'), config: data }; const updated = [newConfig, ...savedDataConfigs].slice(0, MAX_SAVED_ITEMS); saveToStorage(DATA_CONFIG_KEY, updated); setSavedDataConfigs(updated); setDataSaveName(''); setShowDataModal(false); };
             const handleLoadData = (config) => { setData(config); setShowDataModal(false); };
             const handleDeleteData = (id) => { const updated = savedDataConfigs.filter(c => c.id !== id); saveToStorage(DATA_CONFIG_KEY, updated); setSavedDataConfigs(updated); };
+
+            // --- Handlers for Formula Configurations ---
             const handleSaveFormulas = () => { if (!formulaSaveName.trim()) return; const newConfig = { id: Date.now(), name: formulaSaveName.trim(), date: new Date().toLocaleDateString('th-TH'), config: formulas }; const updated = [newConfig, ...savedFormulaConfigs].slice(0, MAX_SAVED_ITEMS); saveToStorage(FORMULA_CONFIG_KEY, updated); setSavedFormulaConfigs(updated); setFormulaSaveName(''); };
             const handleLoadFormulas = (config) => { setFormulas(config); };
             const handleDeleteFormulas = (id) => { const updated = savedFormulaConfigs.filter(c => c.id !== id); saveToStorage(FORMULA_CONFIG_KEY, updated); setSavedFormulaConfigs(updated); };
             const handleFormulaChange = (wallType, rowIndex, field, value) => { setFormulas(f => ({ ...f, [wallType]: f[wallType].map((row, i) => i === rowIndex ? { ...row, [field]: value } : row) })); };
             
-            // --- Memoized Calculation (ไม่เปลี่ยนแปลง) ---
+            // --- Memoized Calculation ---
             const costResults = useMemo(() => { const results = wallTypes.map(type => { const { total, perSqm } = calculateTable(data, formulas[type]); return { type, total, perSqm: Math.round(perSqm) }; }); const validCosts = results.map(r => r.perSqm).filter(c => c > 0); return { results, minCost: Math.min(...validCosts) || 0, maxCost: Math.max(...validCosts) || 0 }; }, [data, formulas]);
 
+            // --- Create a map of variable keys to their full labels for the tooltip ---
+            const keyToLabelMap = useMemo(() => {
+                const map = {};
+                DATA_CONFIG.forEach(group => {
+                    group.items.forEach(item => {
+                        // Clean up the label by removing the variable key in parentheses
+                        map[item.key] = item.label.split('(')[0].trim();
+                    });
+                });
+                return map;
+            }, []); // Empty dependency array means this runs only once.
+
+            // --- Function to translate a formula string into a human-readable format ---
+            const translateFormula = (formulaStr) => {
+                if (!formulaStr || typeof formulaStr !== 'string') return '';
+                let translated = formulaStr;
+
+                // Sort keys by length, descending, to replace longer keys first (e.g., 'LL100' before 'LC')
+                const sortedKeys = Object.keys(keyToLabelMap).sort((a, b) => b.length - a.length);
+
+                sortedKeys.forEach(key => {
+                    // Use a regular expression with word boundaries (\b) to match whole variables only
+                    const regex = new RegExp(`\\b${key}\\b`, 'g');
+                    translated = translated.replace(regex, keyToLabelMap[key]);
+                });
+                return translated;
+            };
+
             return (
-                <div className="min-h-screen text-slate-800 dark:text-slate-200 p-2 sm:p-4 font-sans transition-colors duration-300">
+                <div className="min-h-screen bg-gray-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 p-2 sm:p-4 font-sans transition-colors duration-300">
                     <div className="max-w-xl mx-auto md:max-w-3xl lg:max-w-6xl space-y-4 sm:space-y-6">
                         <nav className="flex justify-between items-center py-4">
                             <div className="w-1/4 flex justify-start">
-                                {step > 0 && (<button onClick={() => setStep(0)} className="p-2 rounded-full bg-gray-200 dark:bg-slate-700 text-primary-brand hover:bg-gray-300 dark:hover:bg-slate-600 transition-all transform hover:scale-110" aria-label="Go to home"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg></button>)}
+                                {step > 0 && (<button onClick={() => setStep(0)} className="p-2 rounded-full bg-gray-200 dark:bg-slate-700 text-primary-brand hover:bg-gray-300 dark:hover:bg-slate-600" aria-label="Go to home"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg></button>)}
                             </div>
                             <div className="w-1/2 text-center"><h1 className="text-3xl sm:text-5xl font-extrabold text-accent-black dark:text-white flex flex-col items-center lg:flex-row lg:justify-center lg:gap-x-3"><span className="whitespace-nowrap">Q-CON</span><span className="text-primary-brand">Cost Compare</span></h1></div>
                             <div className="w-1/4 flex justify-end"><NavThemeToggle theme={theme} setTheme={setTheme} /></div>
@@ -146,31 +154,31 @@
                         
                         {showDataModal && <SavedConfigsModal savedConfigs={savedDataConfigs} saveName={dataSaveName} setSaveName={setDataSaveName} onSave={handleSaveData} onLoad={handleLoadData} onDelete={handleDeleteData} onClose={() => setShowDataModal(false)} />}
                         
-                        {step === 0 && <LocalCard className="animate-subtle-in text-center p-8 sm:p-12"><h2 className="text-3xl sm:text-4xl font-bold text-accent-black dark:text-white mb-4">เปรียบเทียบต้นทุนวัสดุผนัง</h2><p className="text-gray-600 dark:text-slate-300 mb-8 text-lg">เริ่มต้นตรวจสอบข้อมูลค่าวัสดุ และค่าแรง</p><LocalButton onClick={() => setStep(1)} className="text-xl px-10 py-4 max-w-xs">Start &rarr;</LocalButton></LocalCard>}
+                        {step === 0 && <LocalCard className="animate-in text-center p-8 sm:p-12"><h2 className="text-3xl sm:text-4xl font-bold text-accent-black dark:text-white mb-4">เปรียบเทียบต้นทุนวัสดุผนัง</h2><p className="text-gray-600 dark:text-slate-300 mb-8 text-lg">เริ่มต้นตรวจสอบข้อมูลค่าวัสดุ และค่าแรง</p><LocalButton onClick={() => setStep(1)} className="text-xl px-10 py-4 max-w-xs">Start &rarr;</LocalButton></LocalCard>}
                         
-                        {step === 1 && <LocalCard className="animate-subtle-in"><LocalCardHeader>ขั้นตอนที่ 1: ตั้งค่าข้อมูล</LocalCardHeader><LocalCardContent>
+                        {step === 1 && <LocalCard className="animate-in"><LocalCardHeader>ขั้นตอนที่ 1: ตั้งค่าข้อมูล</LocalCardHeader><LocalCardContent>
                             <div className="flex flex-wrap gap-2 mb-6 border-b dark:border-slate-700 pb-4"><LocalButton variant="secondary" onClick={() => setData(initialDataMap)}>รีเซ็ตค่า</LocalButton><LocalButton variant="secondary" onClick={() => setShowDataModal(true)}>บันทึก/โหลด ({savedDataConfigs.length})</LocalButton><LocalButton variant="secondary" onClick={() => setStep(4)}>แก้ไขสูตร</LocalButton></div>
                             {DATA_CONFIG.map(({ group, items }) => (<div key={group} className="mb-6"><h3 className="text-lg font-bold text-accent-black dark:text-slate-100 mb-3 border-b-2 border-primary-brand/50 pb-1">{group}</h3><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                 {items.map(item => (<div key={item.key} className="space-y-1"><label className="block text-sm font-medium text-gray-600 dark:text-slate-300">{item.label}</label><div className="flex items-center">
-                                    <input type="number" step="0.01" value={data[item.key]} onChange={e => setData(d => ({ ...d, [item.key]: parseFloat(e.target.value) || 0 }))} className="w-full border p-3 text-base rounded-l-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:border-primary-dark dark:focus:border-primary-brand focus:ring-1 focus:ring-primary-dark transition-all" />
+                                    <input type="number" step="0.01" value={data[item.key]} onChange={e => setData(d => ({ ...d, [item.key]: parseFloat(e.target.value) || 0 }))} className="w-full border p-3 text-base rounded-l-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:border-primary-dark dark:focus:border-primary-brand focus:ring-1 focus:ring-primary-dark" />
                                     <span className="bg-gray-200 text-gray-700 dark:bg-slate-700 dark:text-slate-300 p-3 rounded-r-lg font-medium">{item.unit.split('/')[0]}</span>
                                 </div></div>))}
                             </div></div>))}
                         </LocalCardContent><div className="p-4 sm:p-6 flex justify-end"><LocalButton onClick={() => setStep(2)} className="max-w-full sm:max-w-xs">คำนวณและเปรียบเทียบ &rarr;</LocalButton></div></LocalCard>}
                         
-                        {step === 2 && <LocalCard className="animate-subtle-in"><LocalCardHeader>ขั้นตอนที่ 2: สรุปเปรียบเทียบต้นทุน (บาท/ตร.ม.)</LocalCardHeader><LocalCardContent>
+                        {step === 2 && <LocalCard className="animate-in"><LocalCardHeader>ขั้นตอนที่ 2: สรุปเปรียบเทียบต้นทุน (บาท/ตร.ม.)</LocalCardHeader><LocalCardContent>
                             <div className="overflow-x-auto"><table className="min-w-full text-base rounded-lg shadow-xl"><thead><tr className="border-b border-primary-dark/50 dark:border-slate-700 bg-primary-light dark:bg-slate-900/50"><th className="text-left p-4 font-bold text-primary-dark w-3/5">ประเภทผนัง</th><th className="text-right p-4 font-bold text-primary-dark w-2/5">บาท/ตร.ม.</th></tr></thead><tbody>
-                                {costResults.results.map((r, i) => { const isMin = r.perSqm > 0 && r.perSqm === costResults.minCost, isMax = r.perSqm > 0 && r.perSqm === costResults.maxCost; let rowCls = 'bg-white dark:bg-slate-800 even:bg-gray-50 dark:even:bg-slate-800/50', costCls = 'text-gray-900 dark:text-slate-100'; if (isMin) { rowCls = 'bg-green-100/70 dark:bg-green-900/40 border-l-8 border-green-500 font-bold'; costCls = 'text-green-700 dark:text-green-500 font-extrabold text-2xl'; } else if (isMax) { rowCls = 'bg-red-100/70 dark:bg-red-900/40 border-l-8 border-red-500 font-bold'; costCls = 'text-red-700 dark:text-red-500 font-extrabold text-2xl'; } return (<tr key={r.type} style={{ animationDelay: `${i * 100}ms` }} className={`border-b border-gray-200 dark:border-slate-700 transition-all duration-500 stagger-item animate-list-item-in ${rowCls}`}><td className="p-4 text-left">{r.type}</td><td className={`text-right p-4 font-mono ${costCls}`}>{formatNumber(r.perSqm)}</td></tr>); })}
+                                {costResults.results.map((r, i) => { const isMin = r.perSqm > 0 && r.perSqm === costResults.minCost, isMax = r.perSqm > 0 && r.perSqm === costResults.maxCost; let rowCls = 'bg-white dark:bg-slate-800 even:bg-gray-50 dark:even:bg-slate-800/50', costCls = 'text-gray-900 dark:text-slate-100'; if (isMin) { rowCls = 'bg-green-100/70 dark:bg-green-900/40 border-l-8 border-green-500 font-bold'; costCls = 'text-green-700 dark:text-green-500 font-extrabold text-2xl'; } else if (isMax) { rowCls = 'bg-red-100/70 dark:bg-red-900/40 border-l-8 border-red-500 font-bold'; costCls = 'text-red-700 dark:text-red-500 font-extrabold text-2xl'; } return (<tr key={r.type} className={`border-b border-gray-200 dark:border-slate-700 transition-colors ${rowCls}`}><td className="p-4 text-left">{r.type}</td><td className={`text-right p-4 font-mono ${costCls}`}>{formatNumber(r.perSqm)}</td></tr>); })}
                             </tbody></table></div>
                             <div className="p-4 sm:p-6 mt-4 flex flex-col sm:flex-row justify-between space-y-3 sm:space-y-0 sm:space-x-4"><LocalButton variant="secondary" onClick={() => setStep(1)} className="order-2 sm:order-1">&larr; แก้ไขข้อมูล</LocalButton><LocalButton onClick={() => setStep(3)} className="order-1 sm:order-2">ดูรายละเอียดเต็ม &rarr;</LocalButton></div>
                         </LocalCardContent></LocalCard>}
 
-                        {step === 3 && <div className="animate-subtle-in">
+                        {step === 3 && <div className="animate-in">
                             <div className="flex justify-between items-center mb-4 sm:mb-6"><h2 className="text-xl sm:text-2xl font-bold text-accent-black dark:text-white">ขั้นตอนที่ 3: ตารางเปรียบเทียบแบบเต็ม</h2><LocalButton variant="secondary" onClick={() => setStep(2)} className="w-auto py-2 px-3 text-sm">ย้อนกลับ</LocalButton></div>
                             <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
-                                {costResults.results.map((r, i) => { const { rows, total, perSqm } = calculateTable(data, formulas[r.type]); const isMin = r.perSqm > 0 && r.perSqm === costResults.minCost, isMax = r.perSqm > 0 && r.perSqm === costResults.maxCost; return (
-                                    <LocalCard key={r.type} style={{ animationDelay: `${i * 100}ms` }} className={`stagger-item animate-list-item-in transition-all duration-300 ${isMin ? 'border-4 border-green-500' : isMax ? 'border-4 border-red-500' : 'dark:border-slate-700'}`}>
-                                        <LocalCardHeader><span className={`font-extrabold ${isMin ? 'text-green-600 dark:text-green-400' : isMax ? 'text-red-600 dark:text-red-400' : 'text-primary-dark'}`}>{r.type}</span>{isMin && <span className="ml-2 text-xs text-green-700 bg-green-100 dark:bg-green-900/50 dark:text-green-300 px-2 py-0.5 rounded-full animate-pulse-badge">ถูกที่สุด 🏆</span>}{isMax && <span className="ml-2 text-xs text-red-700 bg-red-100 dark:bg-red-900/50 dark:text-red-300 px-2 py-0.5 rounded-full animate-pulse-badge">แพงที่สุด 🚨</span>}</LocalCardHeader>
+                                {costResults.results.map(r => { const { rows, total, perSqm } = calculateTable(data, formulas[r.type]); const isMin = r.perSqm > 0 && r.perSqm === costResults.minCost, isMax = r.perSqm > 0 && r.perSqm === costResults.maxCost; return (
+                                    <LocalCard key={r.type} className={`transition-all duration-300 ${isMin ? 'border-4 border-green-500' : isMax ? 'border-4 border-red-500' : 'dark:border-slate-700'}`}>
+                                        <LocalCardHeader><span className={`font-extrabold ${isMin ? 'text-green-600 dark:text-green-400' : isMax ? 'text-red-600 dark:text-red-400' : 'text-primary-dark'}`}>{r.type}</span>{isMin && <span className="ml-2 text-xs text-green-700 bg-green-100 dark:bg-green-900/50 dark:text-green-300 px-2 py-0.5 rounded-full">ถูกที่สุด 🏆</span>}{isMax && <span className="ml-2 text-xs text-red-700 bg-red-100 dark:bg-red-900/50 dark:text-red-300 px-2 py-0.5 rounded-full">แพงที่สุด 🚨</span>}</LocalCardHeader>
                                         <LocalCardContent className="p-0"><div className="overflow-x-auto"><table className="w-full text-xs sm:text-sm whitespace-nowrap">
                                             <thead><tr className="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-700"><th className="text-left p-2.5 w-2/5 font-semibold">รายการ</th><th className="text-right p-2.5 font-semibold">ปริมาณ</th><th className="text-right p-2.5 font-semibold">ราคา/หน่วย</th><th className="text-right p-2.5 font-semibold">รวม (บาท)</th></tr></thead>
                                             <tbody>{rows.map((row, i) => (<tr key={i} className={`${row.q === 0 ? 'bg-gray-100 dark:bg-slate-800/80 italic text-gray-500 dark:text-slate-500' : 'bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/50'} border-b border-gray-100 dark:border-slate-700/50 transition-colors`}><td className="p-2.5">{row.n}</td><td className="text-right p-2.5 font-mono">{formatNumber(row.q)}</td><td className="text-right p-2.5 font-mono">{formatNumber(row.u, 2)}</td><td className="text-right p-2.5 font-mono font-semibold">{formatNumber(row.t)}</td></tr>))}
@@ -183,8 +191,7 @@
                             </div>
                         </div>}
 
-                        {/* ขั้นตอนที่ 4 ไม่ได้ปรับปรุง animation แต่ยังคงใช้งานได้เหมือนเดิม */}
-                        {step === 4 && <div className="animate-subtle-in"><LocalCard>
+                        {step === 4 && <div className="animate-in"><LocalCard>
                             <LocalCardHeader>ขั้นตอนที่ 4: แก้ไขสูตรการคำนวณ</LocalCardHeader>
                             <LocalCardContent className="space-y-6">
                                 <div className="p-4 border dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/50 shadow-inner space-y-3">
@@ -203,7 +210,30 @@
                                     <div key={type}><h3 className="text-lg font-bold mb-2">{type}</h3><div className="overflow-x-auto"><table className="w-full text-sm">
                                         <thead className="bg-gray-50 dark:bg-slate-700/50"><tr className="border-b border-gray-200 dark:border-slate-700"><th className="p-2 text-left font-semibold">รายการ</th><th className="p-2 text-left font-semibold">ปริมาณ (สูตร)</th><th className="p-2 text-left font-semibold">ราคา/หน่วย (ตัวแปร)</th></tr></thead>
                                         <tbody>{formulas[type].map((row, i) => (
-                                            <tr key={i} className="border-b dark:border-slate-700"><td className="p-1.5"><input type="text" value={row.name} onChange={e => handleFormulaChange(type, i, 'name', e.target.value)} className="w-full p-2 border rounded-md bg-white dark:bg-slate-900 dark:border-slate-600" /></td><td className="p-1.5"><input type="text" value={row.formula} onChange={e => handleFormulaChange(type, i, 'formula', e.target.value)} className="w-full p-2 border rounded-md bg-white dark:bg-slate-900 dark:border-slate-600 font-mono" /></td><td className="p-1.5"><input type="text" value={row.priceVar} onChange={e => handleFormulaChange(type, i, 'priceVar', e.target.value)} className="w-28 p-2 border rounded-md bg-white dark:bg-slate-900 dark:border-slate-600 font-mono" /></td></tr>
+                                            <tr key={i} className="border-b dark:border-slate-700">
+                                                <td className="p-1.5">
+                                                    <input type="text" value={row.name} onChange={e => handleFormulaChange(type, i, 'name', e.target.value)} className="w-full p-2 border rounded-md bg-white dark:bg-slate-900 dark:border-slate-600" />
+                                                </td>
+                                                <td className="p-1.5">
+                                                    <input 
+                                                        type="text" 
+                                                        value={row.formula} 
+                                                        onChange={e => handleFormulaChange(type, i, 'formula', e.target.value)} 
+                                                        className="w-full p-2 border rounded-md bg-white dark:bg-slate-900 dark:border-slate-600 font-mono"
+                                                        title={translateFormula(row.formula)}
+                                                    />
+                                                </td>
+                                                <td className="p-1.5">
+                                                    {/* MODIFIED: Added title attribute for the price variable tooltip */}
+                                                    <input 
+                                                        type="text" 
+                                                        value={row.priceVar} 
+                                                        onChange={e => handleFormulaChange(type, i, 'priceVar', e.target.value)} 
+                                                        className="w-28 p-2 border rounded-md bg-white dark:bg-slate-900 dark:border-slate-600 font-mono"
+                                                        title={keyToLabelMap[row.priceVar] || 'ไม่พบชื่อตัวแปร'}
+                                                    />
+                                                </td>
+                                            </tr>
                                         ))}</tbody>
                                     </table></div></div>
                                 ))}
